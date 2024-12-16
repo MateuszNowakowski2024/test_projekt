@@ -3,7 +3,6 @@ import json
 from os import path
 from utils import custom_print, get_content_type, get_file_data, MEDIA_CATEGORY
 from re import sub
-from urllib.parse import quote
 
 class ContentTooLong(requests.RequestException):
     """ LinkedIn post limit reached """
