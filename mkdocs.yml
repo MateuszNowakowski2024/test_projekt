@@ -1,0 +1,10 @@
+site_name: My Blog
+site_description: Just a simple blog
+site_url: http://www.example.com
+
+theme:
+  name: material
+
+plugins:
+  - search
+  - blog
