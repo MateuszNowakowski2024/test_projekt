@@ -3,6 +3,7 @@ import json
 from os import path
 from utils import custom_print, get_content_type, get_file_data, MEDIA_CATEGORY
 from re import sub
+import re
 
 class ContentTooLong(requests.RequestException):
     """ LinkedIn post limit reached """
@@ -197,3 +198,65 @@ class LinkedIn:
 
         except requests.exceptions.RequestException as e:
             custom_print(f"Error posting to LinkedIn: {e}")
+            
+            
+def login_linkedin(username, password):
+    """
+    Log in to LinkedIn using username and password and return a session with appropriate cookies.
+    Adjust selectors, URLs, and parameters as needed based on LinkedIn's login flow.
+    """
+
+    login_url = "https://www.linkedin.com/checkpoint/lg/login-submit"
+    session = requests.Session()
+
+    # Step 1: GET the login page to retrieve CSRF tokens and cookies
+    # The login page URL may redirect or change.
+    initial_url = "https://www.linkedin.com/login"
+    r = session.get(initial_url, headers={
+        "User-Agent": "Mozilla/5.0"
+    })
+    
+    if r.status_code != 200:
+        raise Exception(f"Failed to load login page, status code: {r.status_code}")
+
+    # Extract the loginCsrfParam from the page
+    # You need to inspect the LinkedIn login page source to find the hidden fields names
+    csrf_token_pattern = re.compile(r'name="loginCsrfParam" value="([^"]+)"')
+    match = csrf_token_pattern.search(r.text)
+    if not match:
+        raise Exception("Could not find loginCsrfParam on the login page.")
+    login_csrf_param = match.group(1)
+
+    # Step 2: POST credentials to the login-submit endpoint
+    payload = {
+        'session_key': username,
+        'session_password': password,
+        'loginCsrfParam': login_csrf_param
+    }
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.linkedin.com/login",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+
+    # Attempt login
+    res = session.post(login_url, data=payload, headers=headers, allow_redirects=True)
+    
+    if res.status_code != 200 and res.status_code != 302:
+        raise Exception(f"Login request failed with status code: {res.status_code}")
+
+    # After login, check if we are indeed logged in by checking for cookies
+    li_at = session.cookies.get('li_at')
+    jsessionid = session.cookies.get('JSESSIONID')
+
+    if not li_at or not jsessionid:
+        # If we didn't get these cookies, it likely means the login failed.
+        # You may want to print res.text or inspect further.
+        raise Exception("Failed to retrieve li_at or JSESSIONID cookies. Possibly incorrect credentials or changed login flow.")
+
+    print("Logged in successfully. Retrieved cookies:")
+    print("li_at:", li_at[-3:])
+    print("JSESSIONID:", jsessionid[-3:])
+
+    return session  

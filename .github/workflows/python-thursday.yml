@@ -1,7 +1,8 @@
-name: Weekly Automated Blog Post
+name: Thursday Automated Blog Post
+
 on:
   schedule:
-    - cron: '0 8 * * MON' # Every Monday at 8:00 AM
+    - cron: '15 11 * * THU' # 11:15 AM every Thursday
   workflow_dispatch:
 
 jobs:
@@ -26,7 +27,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python genscrap.py
+          python gen_post_thu.py
 
       - name: Configure Git
         run: |
@@ -52,8 +53,7 @@ jobs:
       - name: Post on LinkedIn
         if: success() # Only post if the deployment was successful
         env:
-          LINKEDIN_JSESSIONID: ${{ secrets.LINKEDIN_JSESSIONID }}
-          LINKEDIN_LI_AT: ${{ secrets.LINKEDIN_LI_AT }}
+          LINKEDIN_USERNAME: ${{ secrets.LI_US }}
+          LINKEDIN_PASSWORD: ${{ secrets.LI_PA }}
         run: |
-          python post_to_linkedin.py
-
+          python post_to_lin_thu.py
