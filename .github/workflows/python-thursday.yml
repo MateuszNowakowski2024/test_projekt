@@ -55,5 +55,6 @@ jobs:
         env:
           LINKEDIN_USERNAME: ${{ secrets.LINKEDIN_USERNAME }}
           LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python post_to_lin_thu.py
