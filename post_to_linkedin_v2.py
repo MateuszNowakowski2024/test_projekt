@@ -4,7 +4,7 @@ from dotenv import load_dotenv  # Only if using a .env file
 import glob
 import re
 import openai
-from llm import generate_intro
+from llm import generate_intro_thu
 
 # Load variables from .env file if present
 load_dotenv()
@@ -72,7 +72,7 @@ if files:
         summary_text = "\n\n".join(summary_blocks).strip()
         
         # Generate a dynamic introduction using the LLM
-        message = generate_intro(latest_post, summary_text, BLOG_URL)
+        message = generate_intro_thu(latest_post, summary_text, BLOG_URL)
         
     # Initialize LinkedIn client and post
     linkedin = LinkedIn(cookies=cookies)
