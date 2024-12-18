@@ -200,64 +200,87 @@ class LinkedIn:
             custom_print(f"Error posting to LinkedIn: {e}")
             
             
+import requests
+import re
+from bs4 import BeautifulSoup
+
 def login_linkedin(username, password):
     """
-    Log in to LinkedIn using username and password and return a session with appropriate cookies.
-    Adjust selectors, URLs, and parameters as needed based on LinkedIn's login flow.
+    Attempt to log in to LinkedIn using username and password and return a session with appropriate cookies.
+    This approach scrapes the login page for necessary hidden parameters.
     """
-
-    login_url = "https://www.linkedin.com/checkpoint/lg/login-submit"
     session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.linkedin.com/"
+    })
 
     # Step 1: GET the login page to retrieve CSRF tokens and cookies
-    # The login page URL may redirect or change.
     initial_url = "https://www.linkedin.com/login"
-    r = session.get(initial_url, headers={
-        "User-Agent"        : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-        "Referrer-Policy"   : "strict-origin-when-cross-origin, strict-origin-when-cross-origin"
-        })
-    
+    r = session.get(initial_url)
     if r.status_code != 200:
         raise Exception(f"Failed to load login page, status code: {r.status_code}")
 
-    # Extract the loginCsrfParam from the page
-    # You need to inspect the LinkedIn login page source to find the hidden fields names
-    csrf_token_pattern = re.compile(r'name="loginCsrfParam" value="([^"]+)"')
-    match = csrf_token_pattern.search(r.text)
-    if not match:
+    # Parse the login page
+    soup = BeautifulSoup(r.text, 'html.parser')
+    
+    # Extract the hidden fields needed for login
+    login_csrf_param = soup.find("input", {"name": "loginCsrfParam"})
+    if not login_csrf_param or not login_csrf_param.get('value'):
         raise Exception("Could not find loginCsrfParam on the login page.")
-    login_csrf_param = match.group(1)
+    login_csrf_param_val = login_csrf_param['value']
 
-    # Step 2: POST credentials to the login-submit endpoint
+    csrf_token = soup.find("input", {"name": "csrfToken"})
+    if not csrf_token or not csrf_token.get('value'):
+        raise Exception("Could not find csrfToken on the login page.")
+    csrf_token_val = csrf_token['value']
+
+    sIdString = soup.find("input", {"name": "sIdString"})
+    sIdString_val = sIdString['value'] if sIdString and sIdString.get('value') else ""
+
+    # LinkedIn may also use a 'trk' hidden field
+    trk_input = soup.find("input", {"name": "trk"})
+    trk_val = trk_input['value'] if trk_input and trk_input.get('value') else "guest_homepage-basic_sign-in-submit"
+
+    # The login submit endpoint
+    login_url = "https://www.linkedin.com/checkpoint/lg/login-submit"
+
     payload = {
         'session_key': username,
         'session_password': password,
-        'loginCsrfParam': login_csrf_param
+        'loginCsrfParam': login_csrf_param_val,
+        'csrfToken': csrf_token_val,
+        'trk': trk_val,
+        'sIdString': sIdString_val
     }
 
+    # Additional headers for the POST
     headers = {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": session.headers.get("User-Agent"),
         "Referer": "https://www.linkedin.com/login",
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
-    # Attempt login
+    # Attempt the login
     res = session.post(login_url, data=payload, headers=headers, allow_redirects=True)
     
-    if res.status_code != 200 and res.status_code != 302:
+    if res.status_code not in [200, 302]:
         raise Exception(f"Login request failed with status code: {res.status_code}")
 
-    # After login, check if we are indeed logged in by checking for cookies
+    # After login, check if we are indeed logged in by checking for cookies like li_at
     li_at = session.cookies.get('li_at')
     jsessionid = session.cookies.get('JSESSIONID')
 
     if not li_at or not jsessionid:
-        # If we didn't get these cookies, it likely means the login failed.
-        # You may want to print res.text or inspect further.
+        # Possibly incorrect credentials or changed login flow.
+        # In this situation, you might want to print res.text or examine network logs.
         raise Exception("Failed to retrieve li_at or JSESSIONID cookies. Possibly incorrect credentials or changed login flow.")
 
     print("Logged in successfully. Retrieved cookies:")
     print("li_at:", li_at[-3:])
     print("JSESSIONID:", jsessionid[-3:])
 
-    return session  
+    return session
+
