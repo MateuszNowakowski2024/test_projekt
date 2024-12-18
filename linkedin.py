@@ -213,8 +213,9 @@ def login_linkedin(username, password):
     # The login page URL may redirect or change.
     initial_url = "https://www.linkedin.com/login"
     r = session.get(initial_url, headers={
-        "User-Agent": "Mozilla/5.0"
-    })
+        "User-Agent"        : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
+        "Referrer-Policy"   : "strict-origin-when-cross-origin, strict-origin-when-cross-origin"
+        })
     
     if r.status_code != 200:
         raise Exception(f"Failed to load login page, status code: {r.status_code}")

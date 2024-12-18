@@ -53,7 +53,7 @@ jobs:
       - name: Post on LinkedIn
         if: success() # Only post if the deployment was successful
         env:
-          LINKEDIN_USERNAME: ${{ secrets.LI_US }}
-          LINKEDIN_PASSWORD: ${{ secrets.LI_PA }}
+          LINKEDIN_USERNAME: ${{ secrets.LINKEDIN_USERNAME }}
+          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
         run: |
           python post_to_lin_mon.py
