@@ -19,8 +19,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install mkdocs mkdocs-material openai PyYAML requests beautifulsoup4 feedparser python-dotenv
-          # Install any dependencies for LinkedIn script (if required)
+          pip install mkdocs mkdocs-material openai PyYAML requests beautifulsoup4 feedparser python-dotenv \
+                      mkdocs-git-revision-date-localized-plugin
           # e.g., pip install requests
 
       - name: Generate Blog Post
